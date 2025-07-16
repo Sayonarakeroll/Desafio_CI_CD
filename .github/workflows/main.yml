@@ -64,12 +64,12 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Deploy to Koyeb
-        uses: koyeb/action-deploy
+        uses: koyeb/action-git-deploy@v1
         with:
           koyeb-api-token: ${{ secrets.KOYEB_TOKEN }}
           app: "ms-saudacoes-aleatorias"
           service: "api"
-          image: "docker.io/${{ secrets.DOCKER_USER }}/ms-saudacoes-aleatorias:latest"
+          docker: "docker.io/${{ secrets.DOCKER_USER }}/ms-saudacoes-aleatorias:latest"
 
   cleanup:
     runs-on: ubuntu-latest
