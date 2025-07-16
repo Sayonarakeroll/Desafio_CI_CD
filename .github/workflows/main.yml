@@ -64,7 +64,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Deploy to Koyeb
-        uses: koyeb/action-deploy@v2
+        uses: koyeb/action-deploy
         with:
           koyeb-api-token: ${{ secrets.KOYEB_TOKEN }}
           app: "ms-saudacoes-aleatorias"
