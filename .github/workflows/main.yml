@@ -1,0 +1,84 @@
+name: CI/CD Pipeline para Go
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.24"
+
+      - name: Vet and Lint
+        run: |
+          go vet ./...
+          # Instalar e rodar o golint (ou outro linter de sua preferência)
+          go get -u golang.org/x/lint/golint
+          golint -set_exit_status ./...
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build-lint # Executa depois do lint
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.24"
+
+      - name: Run tests
+        run: go test -v ./...
+
+  release:
+    runs-on: ubuntu-latest
+    needs: test # Executa depois dos testes
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_USER }}/ms-saudacoes-aleatorias:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: release # Executa depois do release
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Deploy to Koyeb
+        uses: koyeb/action-git-deploy@v2
+        with:
+          koyeb-api-token: ${{ secrets.KOYEB_TOKEN }}
+          app: "ms-saudacoes-aleatorias"
+          service: "api"
+          docker-image: "docker.io/${{ secrets.DOCKER_USER }}/ms-saudacoes-aleatorias:latest"
+
+  cleanup:
+    runs-on: ubuntu-latest
+    needs: deploy
+    environment:
+      name: production
+      url: YOUR_APP_URL_ON_KOYEB # Opcional: Coloque a URL da sua app aqui
+    steps:
+      - name: Destroy infrastructure
+        # Aqui entraria o comando para destruir a infra com Terraform, por exemplo.
+        # Lembre-se que esta etapa deve ter aprovação manual.
+        run: echo "Executando a limpeza manual..."
