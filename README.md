@@ -30,7 +30,7 @@ Antes de começar, você precisa ter o [Devbox](https://www.google.com/search?q=
 1.  **Clone o repositório:**
 
     ```bash
-    git clone <URL_DO_SEU_REPOSITORIO>
+    git clone https://github.com/Sayonarakeroll/Desafio_CI_CD.git
     cd ms-saudacoes-aleatorias
     ```
 
