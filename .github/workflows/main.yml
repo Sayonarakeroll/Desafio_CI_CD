@@ -21,7 +21,7 @@ jobs:
         run: |
           go vet ./...
           # Instalar e rodar o golint (ou outro linter de sua preferência)
-          go get -u golang.org/x/lint/golint
+          go install golang.org/x/lint/golint@latest
           golint -set_exit_status ./...
 
   test:
