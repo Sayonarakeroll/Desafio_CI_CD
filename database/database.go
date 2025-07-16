@@ -8,7 +8,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
-
+// DB é a instância de conexão com o banco de dados, acessível globalmente.
 var DB *gorm.DB
 
 // ConnectDatabase inicializa a conexão com o banco de dados SQLite e realiza a migração.
