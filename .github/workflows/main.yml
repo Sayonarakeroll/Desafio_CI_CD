@@ -1,4 +1,4 @@
-name: CI/CD Pipeline para Go
+name: CI/CD Pipeline para Go e Deploy na Koyeb
 
 on:
   push:
@@ -7,82 +7,72 @@ on:
     branches: [main]
 
 jobs:
-  build-lint:
+  # Job para verificar a qualidade do código
+  lint-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout do código
+        uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - name: Configurar Go
+        uses: actions/setup-go@v5
         with:
           go-version: "1.24"
 
-      - name: Vet and Lint
-        run: |
-          go vet ./...
-          # Instalar e rodar o golint (ou outro linter de sua preferência)
-          go install golang.org/x/lint/golint@latest
-          golint -set_exit_status ./...
-
-  test:
-    runs-on: ubuntu-latest
-    needs: build-lint # Executa depois do lint
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - name: Instalar golangci-lint
+        uses: golangci/golangci-lint-action@v6
         with:
-          go-version: "1.24"
+          version: v1.59 # Versão recomendada do linter
 
-      - name: Run tests
+      - name: Executar testes
         run: go test -v ./...
 
-  release:
+  # Job para construir e enviar a imagem Docker
+  build-and-push-docker-image:
     runs-on: ubuntu-latest
-    needs: test # Executa depois dos testes
+    needs: lint-and-test # Executa após os testes e lint
+    # Só executa este job se o commit for na branch 'main'
+    if: github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout do código
+        uses: actions/checkout@v4
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
+      - name: Login no Docker Hub
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASS }}
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v4
+      - name: Construir e enviar a imagem Docker
+        uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: ${{ secrets.DOCKER_USER }}/ms-saudacoes-aleatorias:latest
 
-  deploy:
+  # Job para fazer o deploy na Koyeb
+  deploy-to-koyeb:
     runs-on: ubuntu-latest
-    needs: release
+    needs: build-and-push-docker-image # Executa após a imagem ser enviada
     steps:
-      - name: Install and configure Koyeb CLI
-        uses: koyeb-community/koyeb-actions@v2
+      - name: Deploy na Koyeb
+        uses: koyeb/action-deploy@v2
         with:
-          api_token: ${{ secrets.KOYEB_TOKEN }}
-
-      - name: Deploy to Koyeb
-        uses: koyeb/action-git-deploy@v1
-        with:
-          app-name: "ms-saudacoes-aleatorias"
-          service-name: "api"
-          docker: "docker.io/${{ secrets.DOCKER_USER }}/ms-saudacoes-aleatorias:latest"
-          service-ports: 8080:http
-          service-routes: /:8080
-
-  cleanup:
-    runs-on: ubuntu-latest
-    needs: deploy
-    environment:
-      name: production
-      url: YOUR_APP_URL_ON_KOYEB # Opcional: Coloque a URL da sua app aqui
-    steps:
-      - name: Destroy infrastructure
-        # Aqui entraria o comando para destruir a infra com Terraform, por exemplo.
-        # Lembre-se que esta etapa deve ter aprovação manual.
-        run: echo "Executando a limpeza manual..."
+          api: ${{ secrets.KOYEB_TOKEN }}
+          app: "ms-saudacoes-aleatorias"
+          service: "api"
+          docker:
+            image: "docker.io/${{ secrets.DOCKER_USER }}/ms-saudacoes-aleatorias:latest"
+          ports:
+            - port: 8080
+              protocol: http
+          routes:
+            - path: /
+              port: 8080
+          # ----> INÍCIO DA CORREÇÃO <----
+          # Informa à Koyeb exatamente como verificar a saúde da aplicação
+          health_checks:
+            - type: http
+              port: 8080
+              path: /healthz # Usa o endpoint que criamos no main.go
+          # ----> FIM DA CORREÇÃO <----
