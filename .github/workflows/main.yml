@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-push-docker-image # Executa após a imagem ser enviada
     steps:
-      - name: Deploy na Koyeb
+      - name: Deploy to Koyeb
         uses: koyeb/action-deploy@v2
         with:
           api: ${{ secrets.KOYEB_TOKEN }}
@@ -65,14 +65,11 @@ jobs:
             image: "docker.io/${{ secrets.DOCKER_USER }}/ms-saudacoes-aleatorias:latest"
           ports:
             - port: 8080
-              protocol: http
+              protocol: "http"
           routes:
-            - path: /
+            - path: "/"
               port: 8080
-          # ----> INÍCIO DA CORREÇÃO <----
-          # Informa à Koyeb exatamente como verificar a saúde da aplicação
           health_checks:
-            - type: http
+            - type: "http"
               port: 8080
-              path: /healthz # Usa o endpoint que criamos no main.go
-          # ----> FIM DA CORREÇÃO <----
+              path: "/healthz"
