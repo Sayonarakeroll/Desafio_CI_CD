@@ -29,6 +29,9 @@ func main() {
 	// Uma forma ainda mais simples para permitir TODAS as origens é:
 	// router.Use(cors.Default()) // <- Alternativa simples que já permite '*'
 
+	router.GET("/healthz", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "UP"})
+	})
 	// Define as rotas da API
 	api := router.Group("/api")
 	{
