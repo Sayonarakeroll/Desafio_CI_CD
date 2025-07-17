@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 
 	"github.com/avanti-dvp/ms-saudacoes-aleatorias/database"
 	"github.com/avanti-dvp/ms-saudacoes-aleatorias/handlers"
